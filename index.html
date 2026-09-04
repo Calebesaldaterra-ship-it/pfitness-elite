@@ -267,6 +267,17 @@ a.ct:hover{background:rgba(201,162,39,.07);color:var(--paper)}
 .sz.off{opacity:.3;text-decoration:line-through;cursor:not-allowed}
 .estoque-tag{font-size:.72rem;color:#8a8378;margin-top:2px;display:block}
 .estoque-tag.baixo{color:#a8620f}
+/* foto indisponível */
+.ph-wrap .fallback{display:none}
+.ph-wrap.sem-foto{display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(150deg,#efe9df,#e2dacb)}
+.ph-wrap.sem-foto .fallback{display:flex;flex-direction:column;align-items:center;gap:7px;
+  text-align:center;padding:22px;color:#6b6459}
+.ph-wrap.sem-foto .fallback em{font-family:var(--f-d);font-style:normal;font-size:1.05rem;
+  line-height:1.25;color:var(--ink)}
+.ph-wrap.sem-foto .fallback small{font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:#8a8378}
+.ph-wrap.sem-foto .fallback b{font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;
+  color:#0a6b4d;border:1px solid rgba(0,168,120,.35);border-radius:999px;padding:4px 12px;font-weight:600}
 
 </style>
 </head>
@@ -3405,7 +3416,9 @@ function renderGrid(){
   grid.innerHTML = L.slice(0, LIMITE).map(p => `
     <article class="card">
       <div class="ph-wrap">
-        <img class="ph" src="${p.g[0]}" alt="${esc(p.n)}" loading="lazy">
+        <img class="ph" src="${p.g[0]}" alt="${esc(p.n)}" loading="lazy"
+             onerror="this.closest('.ph-wrap').classList.add('sem-foto');this.remove()">
+        <span class="fallback"><em>${esc(p.n)}</em><small>Ref. ${p.ref}</small><b>foto em atualização</b></span>
       </div>
       <div class="card-b">
         <span class="cat">${p.c} · Ref. ${p.ref}</span>
@@ -3496,7 +3509,7 @@ function renderCart(){
   document.getElementById("pecas").textContent = n ? "(" + n + (n>1?" peças)":" peça)") : "";
   document.getElementById("citems").innerHTML = L.length ? L.map(l => `
     <div class="citem">
-      <img src="${l.p.g[0]}" alt="">
+      <img src="${l.p.g[0]}" alt="" onerror="this.style.visibility='hidden'">
       <div>
         <h4>${esc(l.p.n)}</h4>
         <span class="pu">Tam. ${l.t} · Ref. ${l.p.ref} · ${l.p.p ? brl(l.p.p) : "sob consulta"}</span>
