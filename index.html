@@ -8402,7 +8402,10 @@ const PRODUTOS_BASE = [
 
 /* ============ CONFIGURE AQUI ============ */
 const WHATSAPP  = "5534991298865";   // WhatsApp da loja
-const ADM_USER  = "pontofitness";           // login do painel
+const ADM_USER  = "pontofitness";
+const SB_URL = "https://hxtrdjrrnccelxpusgsw.supabase.co";   // Supabase (banco compartilhado)
+const SB_KEY = "sb_publishable_jsb-bhlbj5uh1QwLBFchWQ_n4uwGT2m";   // chave publica (so leitura; gravar exige a senha do painel)
+let SENHA_ATUAL = "";           // login do painel
 const ADM_SENHA_HASH = "ad101e2bb820f1e212416114ce587e95c602e6eeaec9638082da6acdd877e1ce"; // senha guardada so como codigo (hash)
 const TAMANHOS  = ["P","M","G","GG","G1","G2","G3"];
 const MSG = "Ola! Vi o site do Ponto Fitness Elite e queria tirar uma duvida.";
@@ -8416,6 +8419,13 @@ const brl = n => "R$ " + n.toFixed(2).replace(".", ",");
 const waLink = t => "https://wa.me/" + WHATSAPP + "?text=" + encodeURIComponent(t);
 const esc = s => String(s).replace(/[<>&"]/g, c => ({"<":"&lt;",">":"&gt;","&":"&amp;",'"':"&quot;"}[c]));
 
+function montarProdutos(s, novos){
+  const base = PRODUTOS_BASE.map(b => {
+    const e = s[b.id];
+    return e ? Object.assign({}, b, {n:e.n, p:e.p, d:e.d, e:e.e, ativo:e.ativo !== false}) : Object.assign({}, b);
+  });
+  return base.concat(novos || []);
+}
 let PRODUTOS = (function(){
   const s = store.get("pfe_produtos") || {};
   const base = PRODUTOS_BASE.map(b => {
@@ -8621,6 +8631,7 @@ async function entrar(){
     err.style.display = "none";
     document.getElementById("admLock").style.display = "none";
     document.getElementById("admBody").style.display = "";
+    SENHA_ATUAL = s;
     document.getElementById("admSenha").value = "";
     renderAdm();
   } else {
@@ -8676,6 +8687,7 @@ function persistir(){
   PRODUTOS.filter(p => !p.novo).forEach(p => m[p.id] = {n:p.n, p:p.p, d:p.d, e:p.e, ativo:p.ativo !== false});
   store.set("pfe_produtos", m);
   store.set("pfe_novos", PRODUTOS.filter(p => p.novo));
+  nuvemSalvar(m, PRODUTOS.filter(p => p.novo));
   
 /* ================= ABAS DO ADMIN ================= */
 document.querySelectorAll(".adm-tab").forEach(b => b.onclick = () => {
@@ -8851,13 +8863,14 @@ renderGrid(); renderCart();
 document.getElementById("admSalvar").onclick = () => {
   coletar(); persistir();
   const ok = document.getElementById("admOk");
-  ok.textContent = "✓ salvo neste navegador às " + new Date().toLocaleTimeString("pt-BR");
+  ok.textContent = "✓ salvo para todos os clientes às " + new Date().toLocaleTimeString("pt-BR");
   ok.style.display = "";
   toast("Alterações salvas");
 };
 document.getElementById("admReset").onclick = () => {
   PRODUTOS = PRODUTOS_BASE.map(b => Object.assign({}, b));
   store.set("pfe_produtos", null);
+  nuvemSalvar({}, PRODUTOS.filter(p => p.novo));
   renderAdm(); renderGrid(); renderCart(); toast("Valores originais restaurados");
 };
 document.getElementById("bulkFixo").onclick = () => {
@@ -9056,6 +9069,38 @@ document.getElementById("estSalvar").onclick = () => {
 
 renderGrid(); renderCart();
 
+
+/* ================= BANCO COMPARTILHADO (Supabase) ================= */
+function diffBase(m){
+  const out = {};
+  PRODUTOS_BASE.forEach(b => {
+    const e = m[b.id]; if(!e) return;
+    if(e.n !== b.n || e.p !== b.p || e.d !== b.d || JSON.stringify(e.e) !== JSON.stringify(b.e) || (e.ativo !== false) !== (b.ativo !== false)) out[b.id] = e;
+  });
+  return out;
+}
+async function nuvemSalvar(m, novos){
+  if(!SENHA_ATUAL) return;
+  try{
+    const r = await fetch(SB_URL + "/rest/v1/rpc/elite_salvar", {method:"POST",
+      headers:{"apikey":SB_KEY, "Authorization":"Bearer "+SB_KEY, "Content-Type":"application/json", "Content-Profile":"elite"},
+      body: JSON.stringify({p_senha: SENHA_ATUAL, p_dados: {over: diffBase(m), novos: novos}})});
+    if(!r.ok) throw new Error(await r.text());
+  }catch(e){ console.error(e); toast("Não consegui salvar no servidor — confira a internet"); }
+}
+async function nuvemCarregar(){
+  if(SB_URL.startsWith("__")) return;
+  try{
+    const r = await fetch(SB_URL + "/rest/v1/elite_estado?id=eq.main&select=dados", {headers:{"apikey":SB_KEY, "Authorization":"Bearer "+SB_KEY, "Accept-Profile":"elite"}});
+    const j = await r.json(); if(!j[0]) return;
+    const d = j[0].dados || {};
+    PRODUTOS = montarProdutos(d.over || {}, d.novos || []);
+    store.set("pfe_produtos", d.over || {}); store.set("pfe_novos", d.novos || []);
+    renderGrid(); renderCart();
+    if(document.getElementById("admBody").style.display !== "none") renderAdm();
+  }catch(e){ console.error(e); }
+}
+nuvemCarregar();
 </script>
 </body>
 </html>
