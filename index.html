@@ -467,7 +467,7 @@ a.ct:hover{background:rgba(201,162,39,.07);color:var(--paper)}
             <input type="search" id="admBusca" placeholder="Buscar por nome ou referência...">
             <button class="btn-s gold" id="admSalvar">Salvar alterações</button>
             <button class="btn-s" id="admCopiar">Exportar</button>
-            <button class="btn-s" id="admReset">Restaurar original</button>
+            <button class="btn-s" id="admReset">Voltar ao atacado</button>
             <button class="btn-s" id="admSair">Sair</button>
           </div>
           <div class="adm-bulk">
@@ -491,7 +491,7 @@ a.ct:hover{background:rgba(201,162,39,.07);color:var(--paper)}
             </select>
             <input type="number" id="bulkVal" step="0.01" min="0" placeholder="Valor ou %" style="max-width:110px">
             <button class="btn-s" id="bulkFixo">Aplicar preço</button>
-            <button class="btn-s" id="bulkPct">Reajustar %</button>
+            <button class="btn-s" id="bulkPct" title="Preço = atacado + a margem informada. Não acumula: aplicar 30% duas vezes continua 30%.">Margem % sobre atacado</button>
           </div>
           <p id="admOk" style="display:none;color:#5fd39a;font-size:.85rem;margin:0 0 12px"></p>
           <div class="adm-list" id="admList"></div>
@@ -8650,6 +8650,14 @@ document.getElementById("admSair").onclick = () => {
   fecharAdm(); scrim.classList.remove("on");
 };
 
+/* atacado = preco original do arquivo (PRODUTOS_BASE); a margem da loja e calculada sobre ele */
+const ATACADO = Object.fromEntries(PRODUTOS_BASE.map(b => [b.id, b.p]));
+function admAtacado(p){
+  const a = ATACADO[p.id];
+  if(!a) return "";
+  const m = Math.round((p.p / a - 1) * 100);
+  return `<small style="display:block;margin-top:4px;font-size:.74rem;color:var(--muted)">Atacado R$ ${a.toFixed(2).replace(".", ",")}${p.p && m ? " · margem " + m + "%" : ""}</small>`;
+}
 function renderAdm(busca){
   const q = (busca||"").toLowerCase();
   const L = PRODUTOS.filter(p => !q || p.n.toLowerCase().includes(q) || p.c.toLowerCase().includes(q) || p.ref.includes(q));
@@ -8659,7 +8667,7 @@ function renderAdm(busca){
       <div class="adm-f">
         <div class="adm-g">
           <div><label>Nome</label><input data-k="n" value="${esc(p.n)}"></div>
-          <div><label>Preço (R$) — 0 = sob consulta</label><input data-k="p" type="number" step="0.01" min="0" value="${p.p.toFixed(2)}"></div>
+          <div><label>Preço (R$) — 0 = sob consulta</label><input data-k="p" type="number" step="0.01" min="0" value="${p.p.toFixed(2)}">${admAtacado(p)}</div>
           <div><label>Referência</label><input value="${p.ref}" disabled></div>
         </div>
         <div><label>Descrição</label><textarea data-k="d">${esc(p.d)}</textarea></div>
@@ -8870,7 +8878,7 @@ document.getElementById("admSalvar").onclick = () => {
   toast("Alterações salvas");
 };
 document.getElementById("admReset").onclick = () => {
-  if(!confirm("Voltar TODOS os produtos para o valor original de atacado? As edições feitas no painel serão apagadas.")) return;
+  if(!confirm("Voltar TODOS os produtos para o valor de atacado (sem margem)? As edições feitas no painel serão apagadas.")) return;
   PRODUTOS = PRODUTOS_BASE.map(b => Object.assign({}, b));
   store.set("pfe_produtos", null);
   nuvemSalvar({}, PRODUTOS.filter(p => p.novo));
@@ -8887,8 +8895,13 @@ document.getElementById("bulkFixo").onclick = () => {
 document.getElementById("bulkPct").onclick = () => {
   const v = parseFloat(document.getElementById("bulkVal").value);
   if(isNaN(v)) return toast("Informe a porcentagem");
-  coletar(); PRODUTOS.forEach(p => { if(p.p) p.p = Math.round(p.p * (1 + v/100) * 100)/100; });
-  persistir(); renderAdm(); toast("Preços reajustados em " + v + "%");
+  coletar();
+  const cat = document.getElementById("bulkCat").value;
+  PRODUTOS.forEach(p => {
+    const a = ATACADO[p.id];
+    if(a && (cat === "all" || p.c === cat)) p.p = Math.round(a * (1 + v/100) * 100)/100;
+  });
+  persistir(); renderAdm(); toast("Margem de " + v + "% sobre o atacado aplicada");
 };
 document.getElementById("admCopiar").onclick = async () => {
   coletar();
