@@ -109,6 +109,25 @@ section{padding:88px 0;position:relative}
 .buy:hover{background:var(--gold);color:#03251b}
 .sold{font-size:.72rem;color:#a09889;border-top:1px solid #eee5d6;padding-top:9px}
 .more{text-align:center;margin-top:42px}
+/* destaque "Não encontrou a peça?" */
+.na-link{margin-left:12px;color:#0a6b4d;font-weight:600;text-decoration:underline;text-underline-offset:3px;white-space:nowrap}
+.nachou{margin-top:38px;background:var(--ink);color:var(--paper);border:1px solid var(--gold);border-radius:var(--r);padding:24px 26px;display:grid;grid-template-columns:1fr 1.15fr;gap:22px;align-items:center;scroll-margin-top:90px}
+.nachou.vazio{margin-top:6px;box-shadow:0 0 0 4px rgba(0,168,120,.18)}
+.na-tag{font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-soft)}
+.nachou h3{font-family:var(--f-d);font-size:1.45rem;line-height:1.2;margin:6px 0 8px}
+.nachou p{margin:0;color:#cfc7bb;font-size:.92rem;line-height:1.5}
+.na-form{display:grid;grid-template-columns:1.4fr .9fr 1fr;gap:10px;align-items:end}
+.na-form label{display:flex;flex-direction:column;gap:5px;font-size:.66rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.na-form input,.na-form select{font:inherit;font-size:.88rem;letter-spacing:0;text-transform:none;background:var(--ink-2);color:var(--paper);border:1px solid #3b3630;border-radius:10px;padding:10px 12px;min-width:0}
+.na-form input:focus,.na-form select:focus{outline:none;border-color:var(--gold)}
+.na-btn{grid-column:1/-1;justify-content:center;background:#25D366;color:#062d16;font-weight:700;letter-spacing:.04em;font-size:.95rem;padding:14px 22px}
+.na-btn:hover{background:#4ee287}
+.sem-res{grid-column:1/-1;text-align:center;color:#5c554c;padding:18px 0 0}
+.sem-res b{color:var(--ink)}
+.na-card{display:block;margin-top:8px;background:none;border:0;padding:0;font:inherit;font-size:.76rem;color:#0a6b4d;font-weight:600;text-decoration:underline;text-underline-offset:3px;cursor:pointer;text-align:left}
+.na-card.forte{font-size:.82rem}
+@media(max-width:860px){.nachou{grid-template-columns:1fr;padding:20px 18px}}
+@media(max-width:520px){.na-form{grid-template-columns:1fr 1fr}.na-form label:first-child{grid-column:1/-1}.na-link{display:block;margin:6px 0 0}}
 
 /* STEPS */
 .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:26px}
@@ -377,10 +396,22 @@ a.ct:hover{background:rgba(201,162,39,.07);color:var(--paper)}
       <button class="chip" data-f="Acessórios">Acessórios</button>
       <input type="search" id="busca" placeholder="Buscar por nome ou referência..." class="busca">
     </div>
-    <p class="conta"><span id="conta"></span></p>
+    <p class="conta"><span id="conta"></span><a class="na-link" href="#naoAchou">Não encontrou a peça? Pedir pelo WhatsApp →</a></p>
     <div class="grid" id="grid"></div>
     <div class="more" id="maisWrap"><button class="btn btn-p" id="mais">Ver mais (<span id="restam"></span> restantes)</button></div>
-    <div class="more"><a class="btn btn-g ctaW" href="" target="_blank" rel="noopener">Não achou seu tamanho? Fale com a gente</a></div>
+    <div class="nachou" id="naoAchou">
+      <div>
+        <span class="na-tag">Atendimento direto da loja</span>
+        <h3>Não encontrou a peça que procurava?</h3>
+        <p>Não encontrou seu tamanho ou sua cor? Fale diretamente com nossa loja pelo WhatsApp. Podemos verificar disponibilidade, tamanho e cor para você.</p>
+      </div>
+      <div class="na-form">
+        <label>Peça<input id="naPeca" placeholder="Ex.: Legging preta" autocomplete="off"></label>
+        <label>Tamanho<select id="naTam"><option value="">Não informado</option></select></label>
+        <label>Cor<input id="naCor" placeholder="Opcional" autocomplete="off"></label>
+        <a class="btn na-btn" id="naBtn" href="" target="_blank" rel="noopener">📲 PEDIR PELO WHATSAPP</a>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -8496,6 +8527,7 @@ function renderGrid(){
             ${sizeBtns(p)}
           </div>
           ${tagEstoque(p)}
+          <button class="na-card${totalEstoque(p) === 0 ? " forte" : ""}" data-na="${p.id}">Não tem seu tamanho ou cor? Pedir pelo WhatsApp</button>
         </div>
         <div class="row">
           <div>
@@ -8507,6 +8539,8 @@ function renderGrid(){
         </div>
       </div>
     </article>`).join("");
+  if(!L.length) grid.innerHTML = '<p class="sem-res">Nenhum modelo encontrado' + (BUSCA.trim() ? ' para <b>“' + esc(BUSCA.trim()) + '”</b>' : '') + '.</p>';
+  document.getElementById("naoAchou").classList.toggle("vazio", !L.length);
   const m = document.getElementById("maisWrap");
   document.getElementById("conta").textContent = L.length + (L.length === 1 ? " modelo" : " modelos");
   m.style.display = L.length > LIMITE ? "" : "none";
@@ -8516,11 +8550,13 @@ document.querySelectorAll(".chip").forEach(c => c.addEventListener("click", () =
   document.querySelectorAll(".chip").forEach(x => x.classList.remove("on"));
   c.classList.add("on"); FILTRO = c.dataset.f; LIMITE = 24; renderGrid();
 }));
-document.getElementById("busca").addEventListener("input", e => { BUSCA = e.target.value; LIMITE = 24; renderGrid(); });
+document.getElementById("busca").addEventListener("input", e => { BUSCA = e.target.value; LIMITE = 24; renderGrid(); naDaBusca(); });
 document.getElementById("mais").onclick = () => { LIMITE += 24; renderGrid(); };
 grid.addEventListener("click", e => {
   const sz = e.target.closest(".sz");
   if(sz){ sz.parentElement.querySelectorAll(".sz").forEach(x => x.classList.remove("on")); sz.classList.add("on"); return; }
+  const na = e.target.closest(".na-card");
+  if(na){ naDoProduto(na.dataset.na); return; }
   const b = e.target.closest(".add"); if(!b) return;
   const card = b.closest(".card");
   const t = card.querySelector(".sz.on")?.dataset.t || TAMANHOS[1];
@@ -8529,6 +8565,31 @@ grid.addEventListener("click", e => {
   b.textContent = "Na sacola ✓"; b.classList.add("ok");
   setTimeout(() => { b.textContent = txt; b.classList.remove("ok"); }, 1200);
 });
+
+/* ---------- "Não encontrou a peça?" -> WhatsApp (só contato; não mexe no estoque) ---------- */
+const naPeca = document.getElementById("naPeca"), naTam = document.getElementById("naTam"), naCor = document.getElementById("naCor");
+naTam.insertAdjacentHTML("beforeend", TAMANHOS.map(t => `<option>${t}</option>`).join(""));
+function naMensagem(){
+  const peca = naPeca.value.trim(), tam = naTam.value, cor = naCor.value.trim();
+  let t = "Olá! Estou procurando " + (peca ? "a peça " + peca : "uma peça");
+  if(tam && cor) t += ", no tamanho " + tam + " e na cor " + cor;
+  else if(tam)   t += ", no tamanho " + tam;
+  else if(cor)   t += ", na cor " + cor;
+  return t + ".\nNão encontrei disponível no site do Ponto Fitness Elite.\nGostaria de saber se a loja possui.";
+}
+function naAtualizar(){ document.getElementById("naBtn").href = waLink(naMensagem()); }
+function naDaBusca(){ naPeca.value = BUSCA.trim(); naAtualizar(); }   // a busca mais recente vira a peça procurada
+function naDoProduto(id){
+  const p = PRODUTOS.find(x => x.id === id); if(!p) return;
+  naPeca.value = p.n + " (Ref. " + p.ref + ")";
+  naTam.value = ""; naCor.value = ""; naAtualizar();
+  document.getElementById("naoAchou").scrollIntoView({behavior:"smooth", block:"center"});
+  setTimeout(() => naTam.focus({preventScroll:true}), 450);
+}
+naPeca.addEventListener("input", naAtualizar);
+naTam.addEventListener("change", naAtualizar);
+naCor.addEventListener("input", naAtualizar);
+naAtualizar();
 
 /* ---------- sacola ---------- */
 const drawer = document.getElementById("drawer");
