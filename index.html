@@ -8728,9 +8728,9 @@ function admAtacado(p){
 function renderAdm(busca){
   const q = (busca||"").toLowerCase();
   const L = PRODUTOS.filter(p => !q || p.n.toLowerCase().includes(q) || p.c.toLowerCase().includes(q) || p.ref.includes(q));
-  admList.innerHTML = L.slice(0,80).map(p => `
+  admList.innerHTML = L.map(p => `
     <div class="adm-row" data-id="${p.id}">
-      <img src="${p.g[0]}" alt="">
+      <img src="${p.g[0]}" alt="" loading="lazy">
       <div class="adm-f">
         <div class="adm-g">
           <div><label>Nome</label><input data-k="n" value="${esc(p.n)}"></div>
@@ -8746,7 +8746,7 @@ function renderAdm(busca){
           <span style="font-size:.78rem;color:var(--muted)">${p.novo ? "cadastrado por você" : "Ref. " + p.ref}</span>
         </div>
       </div>
-    </div>`).join("") + (L.length > 80 ? '<p class="hint">Mostrando 80 de '+L.length+'. Use a busca para achar os outros.</p>' : '');
+    </div>`).join("") + '<p class="hint">Mostrando ' + L.length + (L.length === 1 ? ' modelo' : ' modelos') + '.</p>';
 }
 document.getElementById("admBusca").addEventListener("input", e => renderAdm(e.target.value));
 
@@ -8908,7 +8908,7 @@ function renderEstoque(){
     <div class="kpi"><b class="${comEst.filter(p=>totalEstoque(p)===0).length?'zero':''}">${comEst.filter(p=>totalEstoque(p)===0).length}</b><span>Modelos esgotados</span></div>`;
 
   estTab.innerHTML = `<thead><tr><th>Modelo</th>${TAMANHOS.map(t=>`<th style="text-align:center">${t}</th>`).join("")}<th style="text-align:center">Total</th></tr></thead><tbody>` +
-    (L.length ? L.slice(0,120).map(p => {
+    (L.length ? L.map(p => {
       const tot = totalEstoque(p);
       return `<tr data-id="${p.id}">
         <td>${esc(p.n)}<br><small style="color:var(--muted)">Ref. ${p.ref}</small></td>
@@ -8917,7 +8917,6 @@ function renderEstoque(){
       </tr>`;
     }).join("") : `<tr><td colspan="9" style="color:var(--muted);padding:26px 8px">Nenhum modelo neste filtro. Preencha as quantidades para começar a controlar o estoque de um modelo.</td></tr>`) +
     `</tbody>`;
-  if(L.length > 120) estTab.insertAdjacentHTML("afterend", "");
 }
 document.getElementById("estBusca").addEventListener("input", renderEstoque);
 document.getElementById("estFiltro").addEventListener("change", renderEstoque);
@@ -9123,7 +9122,7 @@ function renderEstoque(){
     <div class="kpi"><b class="${comEst.filter(p=>totalEstoque(p)===0).length?'zero':''}">${comEst.filter(p=>totalEstoque(p)===0).length}</b><span>Modelos esgotados</span></div>`;
 
   estTab.innerHTML = `<thead><tr><th>Modelo</th>${TAMANHOS.map(t=>`<th style="text-align:center">${t}</th>`).join("")}<th style="text-align:center">Total</th></tr></thead><tbody>` +
-    (L.length ? L.slice(0,120).map(p => {
+    (L.length ? L.map(p => {
       const tot = totalEstoque(p);
       return `<tr data-id="${p.id}">
         <td>${esc(p.n)}<br><small style="color:var(--muted)">Ref. ${p.ref}</small></td>
@@ -9132,7 +9131,6 @@ function renderEstoque(){
       </tr>`;
     }).join("") : `<tr><td colspan="9" style="color:var(--muted);padding:26px 8px">Nenhum modelo neste filtro. Preencha as quantidades para começar a controlar o estoque de um modelo.</td></tr>`) +
     `</tbody>`;
-  if(L.length > 120) estTab.insertAdjacentHTML("afterend", "");
 }
 document.getElementById("estBusca").addEventListener("input", renderEstoque);
 document.getElementById("estFiltro").addEventListener("change", renderEstoque);
