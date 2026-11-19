@@ -9348,6 +9348,31 @@ nuvemCarregar();
     ir(comNome(destino || FALLBACK, nome));
   };
 
+  /* Intercepta TAMBEM o window.open.
+
+     Nao e precaucao: na pagina da Black os 37 botoes de produto nao sao link
+     nenhum — o app.js chama `window.open(linkWhats(...))` direto. So a
+     delegacao de clique em `a[href*="wa.me"]` pegava 5 dos 42 caminhos para o
+     WhatsApp, e os 37 que mais importam (o botao que fica embaixo da peca)
+     passariam batido. O mesmo guarda protege as outras paginas se um dia o
+     botao delas virar window.open.
+
+     Depois de identificar, a ida e por `location.href` e nao por janela nova:
+     fora do clique da pessoa, o navegador bloqueia popup. */
+  var abrirJanela = window.open;
+  window.open = function(url, alvo, extras){
+    try {
+      if (typeof url === "string" && url.indexOf("wa.me") !== -1) {
+        var g = jaIdentificado();
+        if (g) return abrirJanela.call(window, comNome(url, g.nome), alvo, extras);
+        abrir(url);
+        try { window.CRM && window.CRM.track("FORM_START", { label: "identificacao" }); } catch (x) {}
+        return null;
+      }
+    } catch (e) { /* qualquer falha aqui deixa a janela abrir como sempre */ }
+    return abrirJanela.call(window, url, alvo, extras);
+  };
+
   caixa.addEventListener("click", function(e){ if (e.target === caixa) fechar(); });
   document.addEventListener("keydown", function(e){ if (e.key === "Escape") fechar(); });
 })();
